@@ -181,4 +181,16 @@ public class ApplicationContext implements BeanFactory {
     public Object getBean(Class beanClass) {
         return getBean(beanClass.getName());
     }
+
+    public int getBeanDefinitionCount(){
+        return this.registry.beanDefinitionMap.size();
+    }
+
+    public String[] getBeanDefinitionNames(){
+        return this.registry.beanDefinitionMap.keySet().toArray(new String[0]);
+    }
+
+    public Properties getConfig() {
+        return this.reader.getContextConfig();
+    }
 }
