@@ -3,6 +3,9 @@ package com.gupaoedu.spring.framework.context;
 import com.gupaoedu.spring.framework.annotation.Autowired;
 import com.gupaoedu.spring.framework.annotation.Controller;
 import com.gupaoedu.spring.framework.annotation.Service;
+import com.gupaoedu.spring.framework.aop.DefaultAopProxyFactory;
+import com.gupaoedu.spring.framework.aop.config.AopConfig;
+import com.gupaoedu.spring.framework.aop.support.AdvisedSupport;
 import com.gupaoedu.spring.framework.beans.BeanWrapper;
 import com.gupaoedu.spring.framework.beans.config.BeanDefinition;
 import com.gupaoedu.spring.framework.beans.support.BeanDefinitionReader;
@@ -16,6 +19,8 @@ public class ApplicationContext implements BeanFactory {
 
     // 默认工厂
     private DefaultListableBeanFactory registry = new DefaultListableBeanFactory();
+
+    private DefaultAopProxyFactory proxyFactory = new DefaultAopProxyFactory();
 
     //循环依赖的标识，当前正在创建的BeanName，Mark一下
     private Set<String> singletonsCurrentlyInCreation = new HashSet<String>();
@@ -165,6 +170,20 @@ public class ApplicationContext implements BeanFactory {
             Class<?> clazz = Class.forName(className);
             instance = clazz.newInstance();
 
+            //如果是代理对象，触发aop的逻辑
+            //==================AOP开始=========================
+            //如果满足条件，就直接返回Proxy对象
+            //1、加载AOP的配置文件
+            AdvisedSupport config = instantionAopConfig(beanDefinition);
+            config.setTargetClass(clazz);
+            config.setTarget(instance);
+
+            //判断规则，要不要生成代理类，如果要就覆盖原生对象
+            //如果不要就不做任何处理，返回原生对象
+            if(config.pointCutMath()){
+                instance = proxyFactory.createAopProxy(config).getProxy();
+            }
+
             this.factoryBeanObjectCache.put(beanName,instance);
             this.factoryBeanObjectCache.put(clazz.getName(),instance);
             for (Class<?> i : clazz.getInterfaces()) {
@@ -175,6 +194,17 @@ public class ApplicationContext implements BeanFactory {
             e.printStackTrace();
         }
         return instance;
+    }
+
+    private AdvisedSupport instantionAopConfig(BeanDefinition beanDefinition) {
+        AopConfig config =new AopConfig();
+        config.setPointCut(this.reader.getContextConfig().getProperty("pointCut"));
+        config.setAspectClass(this.reader.getContextConfig().getProperty("aspectClass"));
+        config.setAspectBefore(this.reader.getContextConfig().getProperty("aspectBefore"));
+        config.setAspectAfter(this.reader.getContextConfig().getProperty("aspectAfter"));
+        config.setAspectAfterThrow(this.reader.getContextConfig().getProperty("aspectAfterThrow"));
+        config.setAspectAfterThrowingName(this.reader.getContextConfig().getProperty("aspectAfterThrowingName"));
+        return new AdvisedSupport(config);
     }
 
     @Override
