@@ -40,7 +40,7 @@ public class AdvisedSupport {
         //保存专门匹配的Class的正则
         String pointCutForClassRegex = pointCut.substring(0,pointCut.lastIndexOf("\\(")-4);
         pointCutClassPattern = Pattern.compile("class "+ pointCutForClassRegex.substring(pointCutForClassRegex.lastIndexOf(" ")+1));
-
+        //test
         methodCache = new HashMap<Method, List<Object>>();
         //保存专门匹配方法的正则
         Pattern pointCutPattern =  Pattern.compile(pointCut);
